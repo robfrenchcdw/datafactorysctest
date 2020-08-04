@@ -1,0 +1,77 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "rf-data-factory-01"
+        },
+        "AzureBlobStorage1_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
+        },
+        "AzureSqlDatabase1_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'"
+        },
+        "rfadlsgen2_accountKey": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accountKey' of 'rfadlsgen2'"
+        },
+        "rfkeyvault01_properties_typeProperties_baseUrl": {
+            "type": "string",
+            "defaultValue": "https://rf-keyvault-01.vault.azure.net/"
+        },
+        "rfadlsgen2_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://rfadlsgen2.dfs.core.windows.net"
+        },
+        "containerUri": {
+            "type": "string",
+            "metadata": "URI to storage account containing linked ARM templates"
+        },
+        "containerSasToken": {
+            "type": "string",
+            "metadata": "Sas token to storage account containing linked ARM templates"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "ArmTemplate_0",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-02-01",
+            "properties": {
+                "mode": "incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "factoryName": {
+                        "value": "[parameters('factoryName')]"
+                    },
+                    "AzureBlobStorage1_connectionString": {
+                        "value": "[parameters('AzureBlobStorage1_connectionString')]"
+                    },
+                    "AzureSqlDatabase1_connectionString": {
+                        "value": "[parameters('AzureSqlDatabase1_connectionString')]"
+                    },
+                    "rfadlsgen2_accountKey": {
+                        "value": "[parameters('rfadlsgen2_accountKey')]"
+                    },
+                    "rfkeyvault01_properties_typeProperties_baseUrl": {
+                        "value": "[parameters('rfkeyvault01_properties_typeProperties_baseUrl')]"
+                    },
+                    "rfadlsgen2_properties_typeProperties_url": {
+                        "value": "[parameters('rfadlsgen2_properties_typeProperties_url')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        }
+    ]
+}

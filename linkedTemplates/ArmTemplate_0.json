@@ -1,0 +1,279 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "rf-data-factory-01"
+        },
+        "AzureBlobStorage1_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
+        },
+        "AzureSqlDatabase1_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'"
+        },
+        "rfadlsgen2_accountKey": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accountKey' of 'rfadlsgen2'"
+        },
+        "rfkeyvault01_properties_typeProperties_baseUrl": {
+            "type": "string",
+            "defaultValue": "https://rf-keyvault-01.vault.azure.net/"
+        },
+        "rfadlsgen2_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://rfadlsgen2.dfs.core.windows.net"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage1')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('AzureBlobStorage1_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "connectionString": "[parameters('AzureSqlDatabase1_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/rfkeyvault01')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureKeyVault",
+                "typeProperties": {
+                    "baseUrl": "[parameters('rfkeyvault01_properties_typeProperties_baseUrl')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/rfadlsgen2')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('rfadlsgen2_properties_typeProperties_url')]",
+                    "accountKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('rfadlsgen2_accountKey')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DestinationDataset_7rq')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AzureBlobStorage1",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "folderPath": "raw",
+                        "container": "parquet-test"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_rfadlsgen2_parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "rfadlsgen2",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": {
+                            "value": "@concat('salesorderdetail_',convertTimeZone(utcnow(),'UTC','Mountain Standard Time'))",
+                            "type": "Expression"
+                        },
+                        "folderPath": "raw",
+                        "fileSystem": "parquet-test"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/rfadlsgen2')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AW_salesorderdetail')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AzureSqlDatabase1",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [
+                    {
+                        "name": "SalesOrderID",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "SalesOrderDetailID",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "OrderQty",
+                        "type": "smallint",
+                        "precision": 5
+                    },
+                    {
+                        "name": "ProductID",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "UnitPrice",
+                        "type": "money",
+                        "precision": 19,
+                        "scale": 4
+                    },
+                    {
+                        "name": "UnitPriceDiscount",
+                        "type": "money",
+                        "precision": 19,
+                        "scale": 4
+                    },
+                    {
+                        "name": "LineTotal",
+                        "type": "decimal",
+                        "precision": 38,
+                        "scale": 6
+                    },
+                    {
+                        "name": "rowguid",
+                        "type": "uniqueidentifier"
+                    },
+                    {
+                        "name": "ModifiedDate",
+                        "type": "datetime",
+                        "precision": 23,
+                        "scale": 3
+                    }
+                ],
+                "typeProperties": {
+                    "schema": "SalesLT",
+                    "table": "SalesOrderDetail"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/CopyDataAdvWksToParquet')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "ExtSalesOrderDetail",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [
+                            {
+                                "name": "Source",
+                                "value": "SalesLT.SalesOrderDetail"
+                            },
+                            {
+                                "name": "Destination",
+                                "value": "parquet-test//sales-order-detail-parquet"
+                            }
+                        ],
+                        "typeProperties": {
+                            "source": {
+                                "type": "AzureSqlSource"
+                            },
+                            "sink": {
+                                "type": "ParquetSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobFSWriteSettings"
+                                }
+                            },
+                            "enableStaging": false,
+                            "validateDataConsistency": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "AW_salesorderdetail",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "ds_rfadlsgen2_parquet",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ]
+                    }
+                ],
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/AW_salesorderdetail')]",
+                "[concat(variables('factoryId'), '/datasets/ds_rfadlsgen2_parquet')]"
+            ]
+        }
+    ]
+}
